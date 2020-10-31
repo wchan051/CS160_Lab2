@@ -362,25 +362,16 @@ void sigchld_handler(int sig)
     pid_t pid;
     int status;
     
-    while((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
-	struct job_t *job = getjobpid(jobs, pid);
-	if(!job) {
-	    printf("((%d): No such child", pid);
-	    return;
-	}
-	if(WIFSTOPPED(status)) {
-	    job->state = ST;
-	    printf("Job [%d] (%d) stopped by signal 20\n", job->jid, pid);    
+    while((pid = waitpid(fgpid(jobs), &status, WNOHANG|WUNTRACED)) > 0) {
+	if(WIFSTOPPED(signal)) {
+	    sigtstp_handler(sig);
 	}
 	else if(WIFSIGNALED(status)) {
-	    deletejob(jobs, pid);
-	    printf("Job [%d] (%d) terminated by signal 2 \n", job->jid, pid);
+	    sigtstp_handler(sig);
 	}
-	else if(WIFEXITED(status)) {
+	else if(WIFEXITED(signal)) {
 	    deletejob(jobs, pid);
 	}
-
-    return;
 }
 
 /* 
