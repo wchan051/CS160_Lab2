@@ -364,11 +364,11 @@ void sigchld_handler(int sig)
 	if(WIFEXITED(status) > 0) {
 	    deletejob(jobs, pid);
 	}
-	else if(WIFSTOPPED(status) > 0) {
+	if(WIFSTOPPED(status) > 0) {
 	    printf("Job [%d] (%d) stopped by signal: %d\n", job->jid, job->pid, WSTOPSIG(status));
 	    job->state = ST;
 	}
-	else if(WIFSIGNALED(status) > 0) {
+	if(WIFSIGNALED(status) > 0) {
 	    printf("Job [%d] (%d) terminated by signal %d\n", job->jid, job->pid, WTERMSIG(status));
 	    deletejob(jobs, pid);
 	}
