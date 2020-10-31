@@ -165,66 +165,41 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline) 
 {
-	
-	//argv container for execve() function call
-	char *argv[MAXARGS];
+    char *argv[MAXARGS];
 
-	int bg;
-	pid_t pid;
-
-	//sigset variable
-	sigset_t signal;
-
-	/*returns x
-	 x=1 : BG job
-	 x=0: FG job
-	*/
+    int bg;
+    pid_t pid;
+    sigset_t signal;
+    
 	bg = parseline(cmdline, argv);
 
-	//empty case
 	if(argv[0] == NULL){
 		return;
 	}
-
-	//if not built in cmd
-	if(!builtin_cmd(argv)){
-
-		//blocking 
-		sigprocmask(SIG_BLOCK,&signal , 0);
+	if(!builtin_cmd(argv)) {
+		sigprocmask(SIG_BLOCK,&signal , NULL);
 
 		pid = fork();
-		//child process runs user job
 		if(pid == 0){
 
-			//unblock
-			sigprocmask(SIG_UNBLOCK,&signal , 0);
-
-			//resetting group id=0
+			sigprocmask(SIG_UNBLOCK,&signal , NULL);
 			setpgid(0,0);
-
-			//execve function call, -1=error
 			if(execve(argv[0], argv, environ) < 0){
-				
-				//error message
 				printf("%s: Command not found\n", argv[0]);
 				exit(0);
 			}
 		}
-		//parent
 		else{
-
-			//FG job
 			if(!bg){
 		
-				addjob(jobs,pid,FG,cmdline);
-				sigprocmask(SIG_UNBLOCK,&signal , 0);
+				addjob(jobs, pid, FG, cmdline);
+				sigprocmask(SIG_UNBLOCK,&signal , NULL);
 				waitfg(pid);
 			}
-			//BG job
 			else{
 
-				addjob(jobs,pid,BG,cmdline);
-				sigprocmask(SIG_UNBLOCK,&signal , 0);
+				addjob(jobs, pid, BG, cmdline);
+				sigprocmask(SIG_UNBLOCK, &signal , NULL);
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 			}
 		}
