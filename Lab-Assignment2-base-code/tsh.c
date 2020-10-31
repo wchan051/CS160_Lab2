@@ -165,41 +165,42 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline) 
 {
-    char *argv[MAXARGS];
+    if(argv[0] == NULL) { //start with empty case
+	return;
+    }
 
+    char *argv[MAXARGS];
     int bg = parseline(cmdline, argv);
     pid_t pid;
     sigset_t mask;
-
-	if(argv[0] == NULL){
-		return;
+    
+    if(!builtin_cmd(argv)) {
+	sigprocmask(SIG_BLOCK, &mask, NULL); 
+	pid = fork();
+	    
+	if(pid == 0) {
+	    sigprocmask(SIG_UNBLOCK, &mask , NULL); //unblock
+	    setpgid(0,0); //reset
+		
+	    if(execve(argv[0], argv, environ) < 0) { //check for command error
+		printf("%s: Command not found\n", argv[0]);
+		exit(0);
+	    }
 	}
-	if(!builtin_cmd(argv)) {
-		sigprocmask(SIG_BLOCK, &mask, NULL);
+	else {
+	    if(!bg) { //fg
+		addjob(jobs, pid, FG, cmdline);
+		sigprocmask(SIG_UNBLOCK, &mask , NULL);
+		waitfg(pid);
+	    } else { //bg
+		addjob(jobs, pid, BG, cmdline);
+		sigprocmask(SIG_UNBLOCK, &mask , NULL);
+		printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+	    }
+        }
 
-		pid = fork();
-		if(pid == 0){
-		    sigprocmask(SIG_UNBLOCK, &mask , NULL);
-			setpgid(0,0);
-			if(execve(argv[0], argv, environ) < 0){
-				printf("%s: Command not found\n", argv[0]);
-				exit(0);
-			}
-		}
-		else {
-			if(!bg) {
-				addjob(jobs, pid, FG, cmdline);
-				sigprocmask(SIG_UNBLOCK, &mask , NULL);
-				waitfg(pid);
-			} else {
-				addjob(jobs, pid, BG, cmdline);
-				sigprocmask(SIG_UNBLOCK, &mask , NULL);
-				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-			}
-		}
-
-	}
-	return;
+    }
+    return;
 }
 
 /* 
@@ -358,27 +359,29 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-
-	//pid and return status variables
-	int ret_status;
-	pid_t pid;
-
-	//loop while a wait is detected
-	while((pid = waitpid(fgpid(jobs), &ret_status, WNOHANG|WUNTRACED)) > 0){
-
-		if(WIFSIGNALED(ret_status)){
-			sigint_handler(sig);
-		}
-		else if(WIFSTOPPED(ret_status)){
-			sigtstp_handler(sig);
-		}
-		else if(WIFEXITED(ret_status)){
-			deletejob(jobs, pid);
-		}
-
+    pid_t pid;
+    int status;
+    
+    while((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
+	struct job_t *job = getjobpid(jobs, pid);
+	if(!job) {
+	    printf("((%d): No such child", pid);
+	    return;
+	}
+	    
+        if(WIFSIGNALED(status)) {
+	    deletejob(jobs, pid);
+	    printf("Job [%d] (%d) terminated by signal 2 \n", job->jid, pid);
+	}
+	else if(WIFSTOPPED(status)) {
+	    job->state = ST;
+	    printf("Job [%d] (d) stopped by signal 20\n", job->jid, pid);
+	}
+	else if(WIFEXITED(status)) {
+	    deletejob(jobs, pid);
 	}
 
-	return;
+    return;
 }
 
 /* 
@@ -392,19 +395,13 @@ void sigchld_handler(int sig)
  //and i didnt want to hard code values
 void sigint_handler(int sig) 
 {
-
-	//fethcing pid and jid to match rtest prompts
-	int pid = fgpid(jobs);
+	int fpid = fgpid(jobs);
 	int jid = pid2jid(pid);
-
-	//if FG job exists kill it
-	//ctrl-c affects FG group, thus kill(-pid,sig) is used
-	//kill(pid, sig) would just send to one process
-	if(pid != 0){
-		printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, SIGINT);
-		kill(-pid, SIGINT);
-		//this allows 6-9 to work
-		deletejob(jobs,pid);
+	
+	if(fpid != 0){
+		printf("Job [%d] (%d) terminated by signal %d\n", jid, fpid, SIGINT);
+		kill(-fpid, SIGINT);
+		deletejob(jobs, fpid);
 	}
 	return;
 
@@ -420,18 +417,12 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-	//fethcing pid and jid to match rtest prompts
-	int pid = fgpid(jobs);
+	int fgpid = fgpid(jobs);
 	int jid = pid2jid(pid);
-
-	//if FG job exists kill it
-	//ctrl-z affects FG group, thus kill(-pid,sig) is used
-	//kill(pid, sig) would just send to one process
-	if(pid != 0){
-		printf("Job [%d] (%d) Stopped by signal %d\n", jid, pid, SIGINT);
-		kill(-pid, SIGTSTP);
-		//changing setting to stop
-		getjobpid(jobs, pid)->state = ST;
+	if(fgpid != 0){
+		printf("Job [%d] (%d) Stopped by signal %d\n", jid, fgpid, SIGINT);
+		kill(-fgpid, SIGTSTP);
+		getjobpid(jobs, fgpid)->state = ST;
 	}
 	return;
 }
