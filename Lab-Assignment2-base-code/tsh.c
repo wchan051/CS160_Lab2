@@ -292,33 +292,33 @@ int builtin_cmd(char **argv)
 void do_bgfg(char **argv) 
 {
 	if(argv[1] == NULL) { //not a proper fg/bg command
-		printf("%s command requires PID or %%jobid argument\n", argv[0]);
-		return;
+	    printf("%s command requires PID or %%jobid argument\n", argv[0]);
+	    return;
 	}
 	
 	struct job_t *entry;
 	
 	if(isdigit(argv[1][0])) { //use pid
-		pid_t pid = atoi(argv[1]);
-		if(!(entry = getjobpid(jobs, pid))) { //if this job doesn't exist
-			printf("(%d): No such process\n", pid);
-			return;
-		}
+	    pid_t pid = atoi(argv[1]);
+	    if(!(entry = getjobpid(jobs, pid))) { //if this job doesn't exist
+		printf("(%d): No such process\n", pid);
+		return;
+	    }
 	}
 	else if(argv[1][0] == '%') { //use jid
-		int jid = atoi(&argv[1][1]);
-		if(!(entry = getjobjid(jobs, jid))) {
-			printf("%d: No such job\n", jid);
-			return;
-		}
+	    int jid = atoi(&argv[1][1]);
+	    if(!(entry = getjobjid(jobs, jid))) {
+		printf("%d: No such job\n", jid);
+		return;
+	    }
 	}
 	if(strcmp(argv[0], "fg") == 0) { //fg
-		entry->state = FG;
-		waitfg(entry->pid);
+	    entry->state = FG;
+	    waitfg(entry->pid);
 	}
 	else { //bg
-		entry->state = BG;
-		printf("[%d] (%d) %s", entry->jid, entry->pid, entry->cmdline); 
+	    entry->state = BG;
+	    printf("[%d] (%d) %s", entry->jid, entry->pid, entry->cmdline); 
 	}
 	return;
 }
@@ -332,15 +332,14 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-
-	struct job_t *job;
-	job = getjobpid(jobs, pid);
-	if(!job) {
-	    return;
-	}
-	while(job->pid == pid && job->state == FG) {
-	    sleep(1);
-	}
+    struct job_t *job;
+    job = getjobpid(jobs, pid);
+    if(!job) {
+	return;
+    }
+    while(job->pid == pid && job->state == FG) {
+	sleep(1);
+    }
 }
 
 /*****************
@@ -383,15 +382,13 @@ void sigchld_handler(int sig)
  //and i didnt want to hard code values
 void sigint_handler(int sig) 
 {
-	int pid = fgpid(jobs);
-	int jid = pid2jid(pid);
-	
-	if(pid != 0){
-		printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, SIGINT);
-		kill(-pid, SIGINT);
-		deletejob(jobs, pid);
-	}
-	return;
+    if(pid != 0) {
+	int status;
+	printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), fgpid(jobs), WTERMSIG(status));
+	kill(-pid, SIGINT);
+	deletejob(jobs, pid);
+    }
+    return;
 
 }
 
@@ -405,14 +402,13 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-	int pid = fgpid(jobs);
-	int jid = pid2jid(pid);
-	if(pid != 0) {
-		printf("Job [%d] (%d) Stopped by signal %d\n", jid, pid, SIGINT);
-		kill(-pid, SIGTSTP);
-		getjobpid(jobs, pid)->state = ST;
-	}
-	return;
+    if(pid != 0) {
+	int status;
+	printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), fgpid(jobs), WSTOPSIG(status));
+	kill(-pid, SIGTSTP);
+	getjobpid(jobs, pid)->state = ST;
+    }
+    return;
 }
 
 /*********************
