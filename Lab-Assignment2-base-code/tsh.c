@@ -359,16 +359,16 @@ void sigchld_handler(int sig)
     pid_t pid;
     struct job_t *job;
     
-    while((pid = waitpid(fgpid(jobs), &status, WNOHANG|WUNTRACED)) > 0) {
+    while((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
 	job = getjobpid(jobs, pid);
-	if(WIFEXITED(status) > 0) {
+	if(WIFEXITED(status)) {
 	    deletejob(jobs, pid);
 	}
-	if(WIFSTOPPED(status) > 0) {
+	if(WIFSTOPPED(status)) {
 	    printf("Job [%d] (%d) stopped by signal: %d\n", job->jid, job->pid, WSTOPSIG(status));
 	    job->state = ST;
 	}
-	if(WIFSIGNALED(status) > 0) {
+	if(WIFSIGNALED(status)) {
 	    printf("Job [%d] (%d) terminated by signal %d\n", job->jid, job->pid, WTERMSIG(status));
 	    deletejob(jobs, pid);
 	}
@@ -389,10 +389,7 @@ void sigchld_handler(int sig)
 void sigint_handler(int sig) 
 {
     pid_t pid = fgpid(jobs);
-    if(pid == 0) {
-	return;
-    }
-    else if(pid > 0) {
+    if(pid > 0) {
 	kill(-pid, SIGINT);
     }
     return;
@@ -410,9 +407,6 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig) 
 {
     pid_t pid = fgpid(jobs);
-    if(pid == 0) {
-	return;
-    }
     else if(pid > 0) {
 	kill(-pid, SIGTSTP);
     }
