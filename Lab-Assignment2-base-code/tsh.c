@@ -2,6 +2,7 @@
  * tsh - A tiny shell program with job control
  * 
  * <Put your name and ID here>
+ * Wayland Chang | 862010512
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -165,6 +166,42 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS]; //container
+    int bg;
+    pid_t pid;
+
+    sigset_t signal; //sigset
+
+    bg = parseline(cmdline, argv);
+
+    if(argv[0] == NULL) {
+	return;
+    }
+
+    if(!builtin_cmd(argv)) {
+	sigprocmask(SIG_BLOCK, &signal, 0);
+	pid = fork();
+	if(pid == 0) {
+		sigprocmask(SIG_UNBLOCK, &signal, 0);
+		setpgid(0,0);
+		if(execve(argv[0], argv, environ) < 0) {
+			printf("%s: Command not found\n", argv[0]);
+			exit(0);
+		}
+	} 
+	else {
+	    if(!bg) {
+	        addjob(jobs, pid, FG, cmdline);
+	        sigprocmask(SIG_UNBLOCK, &signal, 0);
+	        waitfg(pid);
+	    }
+	    else {
+	        addjob(jobs, pid, BG, cmdline);
+	        sigprocmask(SIG_UNBLOCK, &signal, 0);
+	        printf("[%d] (%d) %s", pid2jid(pid),pid,cmdline);
+	    }
+	}
+    }				   
     return;
 }
 
@@ -231,6 +268,22 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+    if(!strcmp(argv[0], "quit")) { 
+        exit(0); //exit if quit is the argument
+    }
+    if(!strcmp(argv[0], "jobs")) {
+	listjobs(jobs); //list jobs if jobs is the argument
+	return 1;
+    }
+    if(!strcmp(argv[0], "bg")) {
+	do_bgfg(argv); //go to do_bgfg if bg is the argument
+	return 1;
+    }
+    if(!strcmp(argv[0], "fg")) {
+	do_bgfg(argv); //go to do_bgfg if fg is the argument
+	return 1;
+    }
+    
     return 0;     /* not a builtin command */
 }
 
@@ -239,6 +292,43 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    if(argv[1] == NULL) {
+	printf("%s command requires PID or %%jobid argument\n", argv[0]);
+	return;
+    }
+	
+    struct job_t *job_details;
+    int job_id;
+    pid_t pidt;
+    
+    if(isdigit(argv[1][0])) {
+	pidt = atoi(argv[1]);
+	if(!(job_details = getjobpid(jobs, pidt))) {
+	    printf("(%d): No such process\n", pidt);
+	    return;
+	}
+    }
+    else if(argv[1][0] == '%') {
+	job_id = atoi(&argv[1][1]);
+	if(!(job_details = getjobpid(jobs, pidt))) {
+	    printf("%d: No such job\n", job_id);
+	    return;
+	}
+    }
+    else {
+        printf("%s: Argument must be a PID or %%jobid\n", argv[0]);
+	return;
+    }
+    
+    if(strcmp(argv[0], "fg") == 0) {
+	job_details->state = FG;
+	waitfg(job_details->pid);
+    }
+    else {
+	job_details->state = BG;
+	printf("[%d] (%d) %s", job_details->jid, job_details->pid, job_details->cmdline);
+    }
+    
     return;
 }
 
@@ -247,6 +337,7 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    while(pid == fgpid(jobs)) {}
     return;
 }
 
@@ -263,6 +354,20 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    int return_status;
+    pid_t pid;
+    while((pid = waitpid(fgpid(jobs), &return_status, WNOHANG|WUNTRACED)) > 0) {
+	if(WIFSIGNALED(return_status)) {
+	    sigint_handler(sig);
+	}
+	else if(WIFSTOPPED(return_status)) {
+	    sigtstp_handler(sig);
+	}
+	else if(WIFEXITED(return_status)) {
+	    deletejob(jobs, pid);
+	}
+    }
+    return;
     return;
 }
 
@@ -273,6 +378,13 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    int pid = fgpid(jobs);
+    int jid = pid2jid(pid);
+    if(pid != 0) {
+	printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, SIGINT);
+	kill(-pid, SIGINT);
+	deletejob(jobs, pid);
+    }
     return;
 }
 
@@ -283,6 +395,13 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    int pid = fgpid(jobs);
+    int jid = pid2jid(pid);
+    if(pid != 0) {
+	printf("Job [%d] (%d) stopped by signal %d\n", jid, pid, SIGINT);
+	kill(-pid, SIGINT);
+	getjobpid(jobs, pid)->state = ST;
+    }
     return;
 }
 
