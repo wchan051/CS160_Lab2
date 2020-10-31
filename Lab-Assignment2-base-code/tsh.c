@@ -167,7 +167,7 @@ void eval(char *cmdline)
 {
     char *argv[MAXARGS];
 
-    int parseline = parseline(cmdline, argv);
+    int bg = parseline(cmdline, argv);
     pid_t pid;
     sigset_t mask;
 
@@ -187,7 +187,7 @@ void eval(char *cmdline)
 			}
 		}
 		else {
-			if(!parseline) {
+			if(!bg) {
 				addjob(jobs, pid, FG, cmdline);
 				//sigprocmask(SIG_UNBLOCK, &mask , NULL);
 				waitfg(pid);
