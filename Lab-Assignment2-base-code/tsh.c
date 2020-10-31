@@ -382,7 +382,7 @@ void sigchld_handler(int sig)
  //and i didnt want to hard code values
 void sigint_handler(int sig) 
 {
-    if(pid != 0) {
+    if((pid2jid(pid)) != 0) {
 	int status;
 	printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), fgpid(jobs), WTERMSIG(status));
 	kill(-pid, SIGINT);
@@ -402,7 +402,7 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-    if(pid != 0) {
+    if((pid2jid(pid) != 0) {
 	int status;
 	printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), fgpid(jobs), WSTOPSIG(status));
 	kill(-pid, SIGTSTP);
