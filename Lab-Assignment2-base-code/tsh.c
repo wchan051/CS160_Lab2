@@ -414,7 +414,7 @@ void sigtstp_handler(int sig)
 	return;
     }
     else if(pid > 0) {
-	kill(-pid, SIGSTP);
+	kill(-pid, SIGTSTP);
     }
     return;
 }
