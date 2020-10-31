@@ -386,8 +386,7 @@ void sigint_handler(int sig)
     int pid_jid = pid2jid(pid);
 	
     if(pid != 0) {
-	int status;
-	printf("Job [%d] (%d) terminated by signal %d\n", pid_jid, pid, WTERMSIG(status));
+	printf("Job [%d] (%d) terminated by signal %d\n", pid_jid, pid, SIGINT);
 	kill(-pid, SIGINT);
 	deletejob(jobs, pid);
     }
@@ -409,8 +408,7 @@ void sigtstp_handler(int sig)
     int pid_jid = pid2jid(pid);
 	
     if(pid != 0) {
-	int status;
-	printf("Job [%d] (%d) stopped by signal %d\n", pid_jid, pid, WSTOPSIG(status));
+	printf("Job [%d] (%d) stopped by signal %d\n", pid_jid, pid, SIGINT);
 	kill(-pid, SIGTSTP);
 	getjobpid(jobs, pid)->state = ST;
     }
