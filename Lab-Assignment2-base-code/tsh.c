@@ -382,9 +382,12 @@ void sigchld_handler(int sig)
  //and i didnt want to hard code values
 void sigint_handler(int sig) 
 {
-    if(fgpid(jobs)) != 0) {
+    int pid = fgpid(jobs);
+    int pid_jid = pid2jid(pid);
+	
+    if(pid != 0) {
 	int status;
-	printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(fgpid(jobs)), fgpid(jobs), WTERMSIG(status));
+	printf("Job [%d] (%d) terminated by signal %d\n", pid_jid, pid, WTERMSIG(status));
 	kill(-pid, SIGINT);
 	deletejob(jobs, pid);
     }
@@ -402,9 +405,12 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-    if(fgpid(jobs) != 0) {
+    int pid = fgpid(jobs);
+    int pid_jid = pid2jid(pid);
+	
+    if(pid != 0) {
 	int status;
-	printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(fgpid(jobs)), fgpid(jobs), WSTOPSIG(status));
+	printf("Job [%d] (%d) stopped by signal %d\n", pid_jid, pid, WSTOPSIG(status));
 	kill(-pid, SIGTSTP);
 	getjobpid(jobs, pid)->state = ST;
     }
