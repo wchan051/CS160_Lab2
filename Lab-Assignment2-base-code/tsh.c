@@ -265,32 +265,23 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-	//quiting casei or killig case
 	if(!strcmp(argv[0],"quit")){
-		exit(0);
+	    exit(0); //exits if argument is quit
 	}
-
-	//other cases to handle: fg,bg,jobs
-	//jobs case
-	if(!strcmp(argv[0], "jobs")){
-
-		listjobs(jobs);
-		return 1;
+	if(!strcmp(argv[0], "jobs")) {
+	    listjobs(jobs); //lists jobs if argument is jobs
+	    return 1;
 	}
-	//fg case
-	else if(!strcmp(argv[0], "fg")){
-
-		do_bgfg(argv);
-		return 1;
-	}
-	//bg case
 	else if(!strcmp(argv[0], "bg")){
-
-		do_bgfg(argv);
-		return 1;
+	    do_bgfg(argv); //go to bgfg if argument if bg
+	    return 1;
+	}
+	else if(!strcmp(argv[0], "fg")){
+	    do_bgfg(argv); //go to do_bgfg if argument is fg
+	    return 1;
 	}
 
-	return 0;     /* not a builtin command */
+	return 0;
 }
 
 
@@ -299,70 +290,42 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-	//job id holder
-	struct job_t *job;
-	int jid;
-	pid_t pid;
-
-	//not a proper FG/BG command set up
-	if(argv[1] == NULL){
+	if(argv[1] == NULL) { //not a proper fg/bg command
 		printf("%s command requires PID or %%jobid argument\n", argv[0]);
 		return;
 	}
-
-	//obtaining jid/pid
-
-	//pid is used
-	if(isdigit(argv[1][0])){
-
-		//convert job id string to int
+	
+	struct job_t *job_description;
+	int jid;
+	pid_t pid;
+	
+	if(isdigit(argv[1][0])) { //use pid
 		pid = atoi(argv[1]);
-		
-		//non existing process
-		if(!(job = getjobpid(jobs, pid))){
-			
+		if(!(job_description = getjobpid(jobs, pid))) { //if this job doesn't exist
 			printf("(%d): No such process\n", pid);
 			return;
 		}
 
 	}
-	//jid is used
-	else if(argv[1][0] == '%'){
-		
-		//convert job id string to int
+	else if(argv[1][0] == '%') { //use jid
 		jid = atoi(&argv[1][1]);
-
-		//job does not exists
-		if(!(job = getjobjid(jobs, jid))){
+		if(!(job_description = getjobjid(jobs, jid))) {
 			printf("%d: No such job\n", jid);
 			return;
 		}
-
 	}
-	//incorrect command use
-	else{
-
-		printf("%s: Argument must be a PID or %%jobid\n", argv[0]);
-		return;
-
+// 	else {
+// 		printf("%s: Argument must be a PID or %%jobid\n", argv[0]); //
+// 		return;
+// 	}
+	if(strcmp(argv[0], "fg") == 0) { //fg
+		job_description->state = FG;
+		waitfg(job_description->pid);
 	}
-
-
-	//fg command
-	if(strcmp(argv[0], "fg") == 0){
-		
-		job->state = FG;
-		waitfg(job->pid);
-
+	else { //bg
+		job_description->state = BG;
+		printf("[%d] (%d) %s", job_description->jid, job_description->pid, job_description->cmdline); 
 	}
-
-	//bg command
-	else{
-	
-		job->state = BG;
-		printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline); 
-	}
-
 	return;
 }
 
