@@ -167,39 +167,33 @@ void eval(char *cmdline)
 {
     char *argv[MAXARGS];
 
-    int bg;
+    int parseline = parseline(cmdline, argv);
     pid_t pid;
-    sigset_t signal;
-    
-	bg = parseline(cmdline, argv);
+    sigset_t mask;
 
 	if(argv[0] == NULL){
 		return;
 	}
 	if(!builtin_cmd(argv)) {
-		sigprocmask(SIG_BLOCK,&signal , NULL);
+		sigprocmask(SIG_BLOCK, &mask, NULL);
 
 		pid = fork();
 		if(pid == 0){
-
-			sigprocmask(SIG_UNBLOCK,&signal , NULL);
+		    sigprocmask(SIG_UNBLOCK, &mask , NULL);
 			setpgid(0,0);
 			if(execve(argv[0], argv, environ) < 0){
 				printf("%s: Command not found\n", argv[0]);
 				exit(0);
 			}
 		}
-		else{
-			if(!bg){
-		
+		else {
+			if(!parseline) {
 				addjob(jobs, pid, FG, cmdline);
-				sigprocmask(SIG_UNBLOCK,&signal , NULL);
+				//sigprocmask(SIG_UNBLOCK, &mask , NULL);
 				waitfg(pid);
-			}
-			else{
-
+			} else {
 				addjob(jobs, pid, BG, cmdline);
-				sigprocmask(SIG_UNBLOCK, &signal , NULL);
+				//sigprocmask(SIG_UNBLOCK, &mask , NULL);
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 			}
 		}
