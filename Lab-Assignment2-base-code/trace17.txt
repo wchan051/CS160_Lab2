@@ -1,0 +1,22 @@
+#
+# trace17.txt - Tests whether the shell can handle multiple commands
+#
+
+/bin/echo -e tsh> ./myspin 10 \046\046 ./myspin 2
+./myspin 10 && ./myspin 2
+
+SLEEP 2
+TSTP
+
+/bin/echo tsh> jobs
+jobs
+
+/bin/echo tsh> fg %1
+fg %1
+
+SLEEP 2
+INT
+
+/bin/echo tsh> quit
+quit
+
