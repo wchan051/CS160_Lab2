@@ -365,7 +365,7 @@ void sigchld_handler(int sig)
 	    deletejob(jobs, pid);
 	}
 	else if(WIFSTOPPED(status) > 0) {
-	    print("Job [%d] (%d) stopped by signal: %d\n", job->jid, job->pid, WSTOPSIG(status));
+	    printf("Job [%d] (%d) stopped by signal: %d\n", job->jid, job->pid, WSTOPSIG(status));
 	    job->state = ST;
 	}
 	else if(WIFSIGNALED(status) > 0) {
@@ -388,11 +388,11 @@ void sigchld_handler(int sig)
  //and i didnt want to hard code values
 void sigint_handler(int sig) 
 {
-    pig_t pid = fgpid(jobs);
+    pid_t pid = fgpid(jobs);
     if(pid == 0) {
 	return;
     }
-    else if(fg_pid > 0) {
+    else if(pid > 0) {
 	kill(-pid, SIGINT);
     }
     return;
@@ -409,11 +409,11 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-    pig_t pid = fgpid(jobs);
+    pid_t pid = fgpid(jobs);
     if(pid == 0) {
 	return;
     }
-    else if(fg_pid > 0) {
+    else if(pid > 0) {
 	kill(-pid, SIGSTP);
     }
     return;
