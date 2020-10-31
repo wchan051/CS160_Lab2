@@ -314,10 +314,6 @@ void do_bgfg(char **argv)
 			return;
 		}
 	}
-// 	else {
-// 		printf("%s: Argument must be a PID or %%jobid\n", argv[0]); //
-// 		return;
-// 	}
 	if(strcmp(argv[0], "fg") == 0) { //fg
 		job_description->state = FG;
 		waitfg(job_description->pid);
@@ -339,26 +335,14 @@ void do_bgfg(char **argv)
 void waitfg(pid_t pid)
 {
 
-	//check until the process in no longer in fg
-	/******potential error*******/
-
-	//this code here works for 10-14 but not 6-9
-	//i do not know why...
-	//it was my initial more complicated approach
-	//then i resulted in a more trivial solution
-	//something with the sleep(1) leaves it in an infinite loop
-
-	/*struct job_t * job;
-	job = getjobpid(jobs,pid);
-
-	while(job != NULL && (job->state == FG)){
-		sleep(1);
-	}*/
-
-	while(pid == fgpid(jobs)){}
-	
-	
-	return;
+	struct job_t *job;
+	job = getjobpid(jobs, pid);
+	if(!job) {
+	    return;
+	}
+	while(job->pid == pid && job->state == FG) {
+	    sleep(1);
+	}
 }
 
 /*****************
