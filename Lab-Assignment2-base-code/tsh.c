@@ -368,14 +368,13 @@ void sigchld_handler(int sig)
 	    printf("((%d): No such child", pid);
 	    return;
 	}
-	    
-        if(WIFSIGNALED(status)) {
+	if(WIFSTOPPED(status)) {
+	    job->state = ST;
+	    printf("Job [%d] (%d) stopped by signal 20\n", job->jid, pid);    
+	}
+	else if(WIFSIGNALED(status)) {
 	    deletejob(jobs, pid);
 	    printf("Job [%d] (%d) terminated by signal 2 \n", job->jid, pid);
-	}
-	else if(WIFSTOPPED(status)) {
-	    job->state = ST;
-	    printf("Job [%d] (d) stopped by signal 20\n", job->jid, pid);
 	}
 	else if(WIFEXITED(status)) {
 	    deletejob(jobs, pid);
@@ -645,6 +644,3 @@ void sigquit_handler(int sig)
 	printf("Terminating after receipt of SIGQUIT signal\n");
 	exit(1);
 }
-
-
-
