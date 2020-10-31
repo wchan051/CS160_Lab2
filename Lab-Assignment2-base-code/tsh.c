@@ -363,10 +363,10 @@ void sigchld_handler(int sig)
     int status;
     
     while((pid = waitpid(fgpid(jobs), &status, WNOHANG|WUNTRACED)) > 0) {
-	if(WIFSTOPPED(signal)) {
-	    sigtstp_handler(sig);
+	if(WIFSIGNALED(status)) {
+	    sigint_handler(sig);
 	}
-	else if(WIFSIGNALED(status)) {
+	else if(WIFSTOPPED(signal)) {
 	    sigtstp_handler(sig);
 	}
 	else if(WIFEXITED(signal)) {
