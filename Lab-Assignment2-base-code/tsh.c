@@ -296,32 +296,29 @@ void do_bgfg(char **argv)
 		return;
 	}
 	
-	struct job_t *job_description;
-	int jid;
-	pid_t pid;
+	struct job_t *entry;
 	
 	if(isdigit(argv[1][0])) { //use pid
-		pid = atoi(argv[1]);
-		if(!(job_description = getjobpid(jobs, pid))) { //if this job doesn't exist
+		pid_t pid = atoi(argv[1]);
+		if(!(entry = getjobpid(jobs, pid))) { //if this job doesn't exist
 			printf("(%d): No such process\n", pid);
 			return;
 		}
-
 	}
 	else if(argv[1][0] == '%') { //use jid
-		jid = atoi(&argv[1][1]);
-		if(!(job_description = getjobjid(jobs, jid))) {
+		int jid = atoi(&argv[1][1]);
+		if(!(entry = getjobjid(jobs, jid))) {
 			printf("%d: No such job\n", jid);
 			return;
 		}
 	}
 	if(strcmp(argv[0], "fg") == 0) { //fg
-		job_description->state = FG;
-		waitfg(job_description->pid);
+		entry->state = FG;
+		waitfg(entry->pid);
 	}
 	else { //bg
-		job_description->state = BG;
-		printf("[%d] (%d) %s", job_description->jid, job_description->pid, job_description->cmdline); 
+		entry->state = BG;
+		printf("[%d] (%d) %s", entry->jid, entry->pid, entry->cmdline); 
 	}
 	return;
 }
