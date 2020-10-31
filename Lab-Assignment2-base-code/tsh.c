@@ -189,11 +189,11 @@ void eval(char *cmdline)
 		else {
 			if(!bg) {
 				addjob(jobs, pid, FG, cmdline);
-				//sigprocmask(SIG_UNBLOCK, &mask , NULL);
+				sigprocmask(SIG_UNBLOCK, &mask , NULL);
 				waitfg(pid);
 			} else {
 				addjob(jobs, pid, BG, cmdline);
-				//sigprocmask(SIG_UNBLOCK, &mask , NULL);
+				sigprocmask(SIG_UNBLOCK, &mask , NULL);
 				printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
 			}
 		}
