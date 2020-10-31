@@ -372,6 +372,7 @@ void sigchld_handler(int sig)
 	else if(WIFEXITED(signal)) {
 	    deletejob(jobs, pid);
 	}
+    }
 }
 
 /* 
