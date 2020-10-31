@@ -1,7 +1,7 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * Baldomero Vargas 861143461
+ * Wayland Chang 862010512
  */
 #include <stdio.h>
 #include <stdlib.h>
