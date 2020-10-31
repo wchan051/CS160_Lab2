@@ -165,15 +165,15 @@ int main(int argc, char **argv)
  */
 void eval(char *cmdline) 
 {
-    if(argv[0] == NULL) { //start with empty case
-	return;
-    }
-
     char *argv[MAXARGS];
     int bg = parseline(cmdline, argv);
     pid_t pid;
     sigset_t mask;
     
+    if(argv[0] == NULL) { //start with empty case
+	return;
+    }
+	
     if(!builtin_cmd(argv)) {
 	sigprocmask(SIG_BLOCK, &mask, NULL); 
 	pid = fork();
@@ -417,12 +417,12 @@ void sigint_handler(int sig)
  //and i didnt want to hard code values
 void sigtstp_handler(int sig) 
 {
-	int fgpid = fgpid(jobs);
+	int fpid = fgpid(jobs);
 	int jid = pid2jid(pid);
-	if(fgpid != 0){
-		printf("Job [%d] (%d) Stopped by signal %d\n", jid, fgpid, SIGINT);
-		kill(-fgpid, SIGTSTP);
-		getjobpid(jobs, fgpid)->state = ST;
+	if(fpid != 0){
+		printf("Job [%d] (%d) Stopped by signal %d\n", jid, fpid, SIGINT);
+		kill(-fpid, SIGTSTP);
+		getjobpid(jobs, fpid)->state = ST;
 	}
 	return;
 }
